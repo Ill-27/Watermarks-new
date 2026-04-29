@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syolana Pro Watermarks - Perfect Flow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+            user-select: none;
+        }
+
+        .watermark {
+            position: absolute;
+            color: #ffffff;
+            white-space: nowrap;
+            font-weight: 600;
+            opacity: 1; /* Всегда 100% яркие */
+            will-change: transform; /* Аппаратное ускорение для идеальной плавности видео */
+        }
+    </style>
+</head>
+<body>
+
+<script>
+    const words = ["Syolana", "syolanacom", "Yolana", "syolana.com", "SY"];
+    let activeWords = []; // Массив всех знаков на экране
+    let laneCount = 3; 
+
+    // Функция перерасчета при повороте экрана (горизонтально/вертикально)
+    function resizeAndInit() {
+        // Очищаем старые знаки
+        activeWords.forEach(w => w.el.remove());
+        activeWords = [];
+        
+        // Умный расчет колонок: на узком экране их меньше, чтобы слова не слипались по ширине
+        if (window.innerWidth < 500) laneCount = 2; 
+        else if (window.innerWidth < 900) laneCount = 3;
+        else laneCount = 5; 
+
+        // Предварительно заполняем экран сверху донизу, чтобы не ждать, пока они "накапают"
+        for (let i = 0; i < laneCount; i++) {
+            let startY = -50; // Начинаем чуть выше экрана
+            while (startY < window.innerHeight + 100) {
+                spawnWord(i, startY);
+                // Безопасное расстояние до следующего слова по вертикали (чтобы не слипались)
+                startY += 180 + Math.random() * 150; 
+            }
+        }
+    }
+
+    // Рождение одного водяного знака
+    function spawnWord(laneIndex, startY) {
+        const el = document.createElement('div');
+        el.className = 'watermark';
+        el.innerText = words[Math.floor(Math.random() * words.length)];
+        
+        // Размер шрифта: крупный, но безопасный для мобильных экранов
+        const fontSize = window.innerWidth < 500 ? (1.3 + Math.random() * 0.4) : (1.6 + Math.random() * 0.6);
+        el.style.fontSize = fontSize + 'rem';
+        
+        document.body.appendChild(el);
+
+        // Рассчитываем горизонтальную позицию так, чтобы слова строго сидели в своих колонках
+        const laneWidth = window.innerWidth / laneCount;
+        const centerX = (laneIndex * laneWidth) + (laneWidth / 2);
+        
+        // Легкое смещение внутри своей колонки, чтобы это не выглядело как скучная таблица Excel
+        const offsetLimit = laneWidth * 0.2; 
+        const offsetX = (Math.random() * 2 - 1) * offsetLimit; 
+        
+        el.style.left = (centerX + offsetX) + 'px';
+        
+        // Индивидуальная скорость падения (от 0.8 до 1.4 пикселя за кадр)
+        const speed = 0.8 + Math.random() * 0.6;
+
+        activeWords.push({ el, y: startY, speed, lane: laneIndex });
+    }
+
+    // Главный движок анимации
+    function update() {
+        // 1. Двигаем все знаки вниз
+        for (let i = activeWords.length - 1; i >= 0; i--) {
+            let item = activeWords[i];
+            item.y += item.speed;
+            
+            // translate(-50%, y) центрирует текст идеально ровно
+            item.el.style.transform = `translate(-50%, ${item.y}px)`;
+
+            // Удаляем те, что ушли глубоко за нижний край экрана
+            if (item.y > window.innerHeight + 100) {
+                item.el.remove();
+                activeWords.splice(i, 1);
+            }
+        }
+
+        // 2. Проверяем, нужно ли родить новые знаки сверху
+        for (let i = 0; i < laneCount; i++) {
+            let highestY = window.innerHeight + 1000;
+            
+            // Ищем самую верхнюю надпись в текущей колонке
+            for (let item of activeWords) {
+                if (item.lane === i && item.y < highestY) {
+                    highestY = item.y;
+                }
+            }
+
+            // Если самая верхняя надпись опустилась достаточно низко — рождаем новую сверху
+            if (highestY > 180 + Math.random() * 100) {
+                spawnWord(i, -50); 
+            }
+        }
+
+        // Запрашиваем следующий кадр анимации у браузера
+        requestAnimationFrame(update);
+    }
+
+    // Перестраиваем сетку, если ты перевернешь телефон
+    window.addEventListener('resize', resizeAndInit);
+    
+    // Первичный запуск
+    resizeAndInit();
+    requestAnimationFrame(update);
+
+</script>
+</body>
+</html>
