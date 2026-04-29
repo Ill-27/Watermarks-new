@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syolana Watermarks</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            overflow: hidden; /* Скрываем ползунки прокрутки */
+            font-family: 'Montserrat', sans-serif;
+            user-select: none; /* Запрещаем выделение текста */
+        }
+
+        .watermark {
+            position: absolute;
+            color: #ffffff;
+            opacity: 0; /* Изначально скрыты */
+            transition: opacity 2.5s ease-in-out; /* Плавное появление и исчезновение (2.5 секунды) */
+            pointer-events: none; /* Чтобы мышка не взаимодействовала с текстом */
+            white-space: nowrap;
+            transform: translate(-50%, -50%); /* Центрирование относительно точки координат */
+            text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+<script>
+    // Массив твоих водяных знаков
+    const words = ["Syolana", "syolanacom", "Yolana", "syolana.com", "SY"];
+
+    // Функция для получения случайного числа в диапазоне
+    function getRandom(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    // Функция создания одного водяного знака
+    function spawnWatermark() {
+        const el = document.createElement('div');
+        el.className = 'watermark';
+        
+        // Выбираем случайное слово
+        el.innerText = words[Math.floor(Math.random() * words.length)];
+
+        // Случайный размер шрифта для эффекта глубины (от 1.5 до 4.5 rem)
+        const size = getRandom(1.5, 4.5);
+        el.style.fontSize = size + 'rem';
+
+        // Делаем случайную жирность (600 или 800)
+        el.style.fontWeight = Math.random() > 0.5 ? '800' : '600';
+
+        // Случайные координаты (от 5% до 95% экрана, чтобы не вылезало за края)
+        el.style.left = getRandom(5, 95) + 'vw';
+        el.style.top = getRandom(5, 95) + 'vh';
+
+        document.body.appendChild(el);
+
+        // Целевая прозрачность (от 0.08 до 0.35) — не слишком ярко, чтобы не перекрывать видео полностью
+        const targetOpacity = getRandom(0.08, 0.35);
+        
+        // Время "жизни" водяного знака в полностью видимом состоянии (от 2 до 5 секунд)
+        const stayDuration = getRandom(2000, 5000);
+
+        // 1. Запускаем плавное появление
+        setTimeout(() => {
+            el.style.opacity = targetOpacity;
+        }, 50);
+
+        // 2. Запускаем плавное исчезновение
+        setTimeout(() => {
+            el.style.opacity = 0;
+        }, stayDuration + 2500); // Ждем пока появится (2.5с) + время удержания
+
+        // 3. Удаляем элемент из кода, когда он полностью исчез, чтобы не перегружать компьютер
+        setTimeout(() => {
+            el.remove();
+        }, stayDuration + 5000); // 2.5с появление + удержание + 2.5с исчезновение
+    }
+
+    // Первичный запуск: сразу создаем 40 знаков в случайное время, чтобы экран с первой секунды был заполнен
+    for(let i = 0; i < 40; i++) {
+        setTimeout(spawnWatermark, getRandom(0, 3000));
+    }
+
+    // Бесконечный цикл: каждые 150 миллисекунд рождается новый знак
+    // Это гарантирует, что на экране всегда будет несколько десятков слов одновременно
+    setInterval(spawnWatermark, 150);
+
+</script>
+</body>
+</html>
