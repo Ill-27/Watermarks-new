@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syolana Pro Watermarks - Canvas Art Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap" rel="stylesheet">
+    <style>
+        /* Полностью очищаем фон и убираем любые прокрутки */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            overflow: hidden;
+            user-select: none;
+        }
+        /* Холст занимает весь экран */
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Вместо тысяч тегов div мы используем один графический холст -->
+<canvas id="watermarkCanvas"></canvas>
+
+<script>
+    // Ждем, пока загрузится красивый шрифт, чтобы не было никаких "миганий" стандартных шрифтов при старте
+    document.fonts.ready.then(() => {
+        const canvas = document.getElementById('watermarkCanvas');
+        const ctx = canvas.getContext('2d');
+        const words = ["Syolana", "syolanacom", "Yolana", "syolana.com", "SY"];
+        
+        let width, height;
+        let particles = [];
+        let verticalSpan = 0;
+        
+        // Функция настройки холста и распределения слов
+        function init() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            
+            // Настройка под экраны высокого разрешения (Retina, современные смартфоны) для идеальной четкости
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+            
+            particles = [];
+            
+            // Умный расчет: сколько нужно столбцов и слов в зависимости от размера твоего экрана
+            const laneCount = Math.max(2, Math.floor(width / 150));
+            const laneWidth = width / laneCount;
+            
+            const particlesPerLane = Math.max(5, Math.floor(height / 120));
+            const verticalGap = (height + 200) / particlesPerLane;
+            verticalSpan = verticalGap * particlesPerLane; // Общая высота конвейера
+
+            // Равномерно засеиваем экран словами
+            for (let i = 0; i < laneCount; i++) {
+                for (let j = 0; j < particlesPerLane; j++) {
+                    particles.push({
+                        text: words[Math.floor(Math.random() * words.length)],
+                        // Размер зависит от экрана (чуть меньше на телефоне, чуть больше на ПК)
+                        size: width < 500 ? (15 + Math.random() * 5) : (18 + Math.random() * 8),
+                        lane: i,
+                        xBase: (i + 0.5) * laneWidth,
+                        // Идеальное вертикальное распределение
+                        y: -100 + (j * verticalGap),
+                        // Индивидуальная скорость падения
+                        speedY: 0.6 + Math.random() * 0.4,
+                        // Настройки для элегантного покачивания влево-вправо (Синусоида)
+                        phase: Math.random() * Math.PI * 2,
+                        speedX: 0.0006 + Math.random() * 0.0008,
+                        amplitude: laneWidth * 0.35 // Запрещаем вылезать за пределы своей колонки
+                    });
+                }
+            }
+        }
+
+        // Движок плавной анимации (60 кадров в секунду)
+        function animate(time) {
+            requestAnimationFrame(animate);
+            
+            // Стираем предыдущий кадр
+            ctx.clearRect(0, 0, width, height);
+            
+            // Настройки текста (100% белый, яркий)
+            ctx.fillStyle = '#ffffff'; 
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Отрисовываем каждое слово
+            particles.forEach(p => {
+                // Двигаем вниз
+                p.y += p.speedY;
+                
+                // Вычисляем плавное покачивание по горизонтали
+                const currentX = p.xBase + Math.sin(time * p.speedX + p.phase) * p.amplitude;
+
+                // Рисуем на холсте
+                ctx.font = `600 ${p.size}px 'Montserrat'`;
+                ctx.fillText(p.text, currentX, p.y);
+
+                // Бесшовная магия: если слово ушло за низ экрана, мгновенно перекидываем его на самый верх
+                // Это гарантирует бесконечный поток без создания новых элементов и без пустых дыр
+                if (p.y > height + 100) {
+                    p.y -= verticalSpan; 
+                    p.text = words[Math.floor(Math.random() * words.length)]; // Меняем текст для разнообразия
+                }
+            });
+        }
+
+        // Запускаем систему
+        init();
+        window.addEventListener('resize', init); // Если перевернуть телефон, сетка мгновенно перестроится
+        requestAnimationFrame(animate);
+    });
+</script>
+</body>
+</html>
