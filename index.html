@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artanat | Matrix Watermark (High Density)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            /* Абсолютно черный фон */
+            background-color: #000;
+            /* Скрываем скроллбары, чтобы ничего не мешало */
+            overflow: hidden; 
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="watermark-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('watermark-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Твои коды-водяные знаки
+        const words = ["syolana.com", "syolana", "syolanacom"];
+        let drops = [];
+
+        function initDrops() {
+            drops = [];
+            
+            // 1. РАССТОЯНИЕ МЕЖДУ СТОЛБЦАМИ (чем меньше цифры, тем плотнее столбцы)
+            const spacing = window.innerWidth < 768 ? 50 : 60; 
+            const columns = Math.floor(window.innerWidth / spacing);
+
+            // 2. ГУСТОТА (СЛОИ)
+            // Сколько слов будет падать в каждом столбце одновременно.
+            const densityMultiplier = 1; 
+
+            for (let i = 0; i < columns; i++) {
+                for (let j = 0; j < densityMultiplier; j++) {
+                    drops.push({
+                        // Немного хаоса по оси X, чтобы не шли ровными рядами
+                        x: (i * spacing) + (Math.random() * 30 - 15), 
+                        
+                        // Разброс по высоте, чтобы они падали непрерывным потоком
+                        y: Math.random() * -3000, 
+                        
+                        // Разная скорость падения
+                        speed: 0.8 + Math.random() * 2.0, 
+                        word: words[Math.floor(Math.random() * words.length)],
+                        
+                        // Полупрозрачные (от 15% до 35%)
+                        opacity: 0.15 + Math.random() * 0.2, 
+                        
+                        // От мелких до более крупных для эффекта глубины
+                        size: 10 + Math.random() * 8 
+                    });
+                }
+            }
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initDrops();
+        }
+
+        // Пересчитываем канвас при изменении размера окна
+        window.addEventListener('resize', resize);
+        resize();
+
+        function draw() {
+            // Очищаем экран каждый кадр, чтобы фон оставался идеально черным
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < drops.length; i++) {
+                const drop = drops[i];
+                ctx.font = `${drop.size}px 'Fira Code', monospace`;
+                ctx.fillStyle = `rgba(255, 255, 255, ${drop.opacity})`;
+                ctx.fillText(drop.word, drop.x, drop.y);
+                
+                drop.y += drop.speed;
+
+                // Если слово ушло вниз за экран — возвращаем его наверх с новым значением
+                if (drop.y > canvas.height + 50) {
+                    drop.y = -50;
+                    drop.x = Math.random() * canvas.width;
+                    drop.word = words[Math.floor(Math.random() * words.length)];
+                }
+            }
+            requestAnimationFrame(draw);
+        }
+        
+        draw();
+    </script>
+</body>
+</html>
